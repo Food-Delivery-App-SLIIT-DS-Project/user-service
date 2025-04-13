@@ -1,36 +1,58 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
-import {
-  CreateUserDto,
-  FineOneUserDto,
-  User,
-  UserList,
-} from 'src/common';
+import { PrismaService } from 'prisma/prisma.service';
+import { CreateUserDto, UserResponse } from 'src/common';
 
 @Injectable()
 export class UserService {
-  private users: User[] = [
-    {
-      id: '1',
-      name: 'John Doe',
-      email: 'email',
-      password: 'password',
-    },
-  ];
-
-  createUser(dto: CreateUserDto): User {
-    const user: User = { ...dto };
-    this.users.push(user);
-    return user;
+  constructor(private readonly prisma: PrismaService) {}
+  // create user -------------------------
+  async createUser(data: CreateUserDto) {
+    console.log('data............', data);
+    const result = await this.prisma.user.create({
+      data: {
+        fullName: data.fullName,
+        email: data.email,
+        phoneNumber: data.phoneNumber,
+        role: data.role,
+        isVerified: data.isVerified,
+        passwordHash:data.passwordHash
+      },
+    });
+    return {
+      userId: result.userId,
+      fullName: result.fullName,
+      email: result.email,
+      phoneNumber: result.phoneNumber,
+      role: result.role,
+      isVerified: result.isVerified,
+      createdAt: result.createdAt.toISOString(),
+      updatedAt: result.updatedAt.toISOString(),
+    } as UserResponse;
   }
 
-  findAllUsers(): UserList {
-    return { users: this.users };
-  }
+  // find user by email ----------------------------------
+  async findUserByEmail(email: string): Promise<UserResponse | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
 
-   findUserById(dto: FineOneUserDto): Promise<User | null> {
-    return Promise.resolve(this.users.find((user) => user.id === dto.id) || null);
-  }
+    if (!user) {
+      return null;
+    }
 
-  
+    return {
+      userId: user.userId,
+      fullName: user.fullName,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      role: user.role,
+      isVerified: user.isVerified,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
+      passwordHash: user.passwordHash,
+    } as UserResponse;
+  }
 }

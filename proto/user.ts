@@ -5,16 +5,17 @@
 // source: proto/user.proto
 
 /* eslint-disable */
-import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
-import { Observable } from 'rxjs';
+import { GrpcMethod, GrpcStreamMethod } from "@nestjs/microservices";
+import { Observable } from "rxjs";
 
-export const protobufPackage = 'user';
+export const protobufPackage = "user";
 
 export interface FindUserByEmailDto {
   email: string;
 }
 
-export interface Empty {}
+export interface Empty {
+}
 
 export interface UserList {
   users: UserResponse[];
@@ -59,7 +60,7 @@ export interface UserResponse {
   passwordHash: string;
 }
 
-export const USER_PACKAGE_NAME = 'user';
+export const USER_PACKAGE_NAME = "user";
 
 export interface UserServiceClient {
   createUser(request: CreateUserDto): Observable<UserResponse>;
@@ -78,70 +79,42 @@ export interface UserServiceClient {
 }
 
 export interface UserServiceController {
-  createUser(
-    request: CreateUserDto,
-  ): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
+  createUser(request: CreateUserDto): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
 
-  findAllUsers(
-    request: Empty,
-  ): Promise<UserList> | Observable<UserList> | UserList;
+  findAllUsers(request: Empty): Promise<UserList> | Observable<UserList> | UserList;
 
-  findUserById(
-    request: FineOneUserDto,
-  ): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
+  findUserById(request: FineOneUserDto): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
 
-  updateUser(
-    request: UpdateUserDto,
-  ): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
+  updateUser(request: UpdateUserDto): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
 
-  deleteUser(
-    request: FineOneUserDto,
-  ): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
+  deleteUser(request: FineOneUserDto): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
 
-  verifyUser(
-    request: FineOneUserDto,
-  ): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
+  verifyUser(request: FineOneUserDto): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
 
-  findUserByEmail(
-    request: FindUserByEmailDto,
-  ): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
+  findUserByEmail(request: FindUserByEmailDto): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
 }
 
 export function UserServiceControllerMethods() {
   return function (constructor: Function) {
     const grpcMethods: string[] = [
-      'createUser',
-      'findAllUsers',
-      'findUserById',
-      'updateUser',
-      'deleteUser',
-      'verifyUser',
-      'findUserByEmail',
+      "createUser",
+      "findAllUsers",
+      "findUserById",
+      "updateUser",
+      "deleteUser",
+      "verifyUser",
+      "findUserByEmail",
     ];
     for (const method of grpcMethods) {
-      const descriptor: any = Reflect.getOwnPropertyDescriptor(
-        constructor.prototype,
-        method,
-      );
-      GrpcMethod('UserService', method)(
-        constructor.prototype[method],
-        method,
-        descriptor,
-      );
+      const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
+      GrpcMethod("UserService", method)(constructor.prototype[method], method, descriptor);
     }
     const grpcStreamMethods: string[] = [];
     for (const method of grpcStreamMethods) {
-      const descriptor: any = Reflect.getOwnPropertyDescriptor(
-        constructor.prototype,
-        method,
-      );
-      GrpcStreamMethod('UserService', method)(
-        constructor.prototype[method],
-        method,
-        descriptor,
-      );
+      const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
+      GrpcStreamMethod("UserService", method)(constructor.prototype[method], method, descriptor);
     }
   };
 }
 
-export const USER_SERVICE_NAME = 'UserService';
+export const USER_SERVICE_NAME = "UserService";

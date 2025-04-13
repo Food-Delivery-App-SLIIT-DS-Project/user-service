@@ -10,7 +10,13 @@ datasource db {
 }
 
 model User {
-  id    Int     @default(autoincrement()) @id
-  email String  @unique
-  name  String?
+  userId           String   @id @default(uuid())
+  fullName     String
+  email        String   @unique
+  phoneNumber  String
+  role         String
+  isVerified   String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  passwordHash String
 }

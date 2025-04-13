@@ -3,35 +3,51 @@ syntax = "proto3";
 package user;
 
 service UserService{
-    rpc CreateUser(CreateUserDto) returns (User){}
+    rpc CreateUser(CreateUserDto) returns (UserResponse){}
     rpc FindAllUsers(Empty) returns (UserList){}
-    rpc FindUserById(FineOneUserDto) returns (User){}
-    rpc UpdateUser(UpdateUserDto) returns (User){}
-    rpc DeleteUser(FineOneUserDto) returns (User){}
-
+    rpc FindUserById(FineOneUserDto) returns (UserResponse){}
+    rpc UpdateUser(UpdateUserDto) returns (UserResponse){}
+    rpc DeleteUser(FineOneUserDto) returns (UserResponse){}
+    rpc VerifyUser(FineOneUserDto) returns (UserResponse){}
+    rpc findUserByEmail(FindUserByEmailDto) returns (UserResponse){}
 }
+message FindUserByEmailDto{
+    string email = 1;
+}
+
 message Empty {}
 message UserList{
-    repeated User users = 1;
+    repeated UserResponse users = 1;
 }
 message FineOneUserDto{
     string id = 1;
 }
+message VerifyOneUserDto{
+    string is_verified =1;
+}
 message CreateUserDto{
-    string id = 1;
-    string name = 2;
-    string email = 3;
-    string password = 4;
+    string full_name = 1;
+    string email = 2;
+    string phone_number = 3;
+    string password_hash = 4;
+    string role = 5; // 'customer', 'delivery_personnel', 'restaurant'
+    string is_verified = 6; // 'pending', 'verified', 'rejected'
 }
 message UpdateUserDto{
-    string id = 1;
-    string name = 2;
-    string email = 3;
-    string password = 4;
+    string user_id = 1;
+    string full_name = 2;
+    string phone_number = 3;
+    string role = 4;
+    string is_verified = 5;
 }
-message User{
-    string id = 1;
-    string name = 2;
+message UserResponse {
+    string user_id = 1;
+    string full_name = 2;
     string email = 3;
-    string password = 4;
-}
+    string phone_number = 4;
+    string role = 5;
+    string is_verified = 6;
+    string created_at = 7;
+    string updated_at = 8;
+    string passwordHash = 9; 
+  }
