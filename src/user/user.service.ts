@@ -19,8 +19,11 @@ export class UserService {
   constructor(private readonly prisma: PrismaService) {}
   // create user -------------------------
   async createUser(data: CreateUserDto): Promise<UserResponse> {
+    console.log('createUser--------------------', data);
+    // Check if user already exists
     const result = await this.prisma.user.create({
       data: {
+        userId: data.userId,
         fullName: data.fullName,
         email: data.email,
         phoneNumber: data.phoneNumber,
@@ -48,7 +51,9 @@ export class UserService {
     const { userId, refreshToken } = data;
 
     const user = await this.prisma.user.findUnique({ where: { userId } });
+    console.log('user', user);
     if (!user || !user.refreshToken) {
+      console.log('user not found or refresh token not set');
       return { success: false };
     }
 
@@ -56,6 +61,7 @@ export class UserService {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const isMatch = await bcrypt.compare(refreshToken, user.refreshToken);
     if (!isMatch) {
+      console.log('refresh token not match');
       return { success: false };
     }
 
