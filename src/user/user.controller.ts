@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/await-thenable */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
@@ -12,6 +13,10 @@ import {
   UserList,
   FineOneUserDto,
   UpdateUserDto,
+  DeleteRefreshTokenRequest,
+  UpdateRefreshTokenResponse,
+  UpdateRefreshTokenRequest,
+  DeleteRefreshTokenResponse,
 } from 'src/common';
 import { from, map, Observable, of } from 'rxjs';
 import { RpcException } from '@nestjs/microservices';
@@ -45,6 +50,18 @@ export class UserController implements UserServiceController {
     console.log(result);
     return result;
   }
+//------------- remove refresh token ----------------
+  deleteRefreshToken(data: DeleteRefreshTokenRequest): Observable<DeleteRefreshTokenResponse> {
+    console.log('removeRefreshToken', data);
+    return from(this.userService.removeRefreshToken(data));
+  }
+
+// update refresh token ----------------
+updateRefreshToken(data: UpdateRefreshTokenRequest): Observable<UpdateRefreshTokenResponse> {
+    console.log('updateRefreshToken', data);
+    return from(this.userService.updateRefreshToken(data));
+  }
+
   // // find all users --------------------------
   findAllUsers(): Observable<UserList> {
     const users: UserResponse[] = [
