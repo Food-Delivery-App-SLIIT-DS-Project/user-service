@@ -5,13 +5,24 @@ package user;
 service UserService{
     rpc CreateUser(CreateUserDto) returns (UserResponse){}
     rpc FindAllUsers(Empty) returns (UserList){}
+    rpc FindAllCustomers(Empty) returns (UserList){}
+    rpc FindAllDeliveryPersonnel(Empty) returns (UserList){}
+    rpc FindAllRestaurants(Empty) returns (UserList){}
+    rpc FindAllUserByIsVerified(Status) returns (UserList){}
+    rpc FindAllCustomerByIsVerified(Status) returns (UserList){}
+    rpc FindAllDeliveryPersonnelByIsVerified(Status) returns (UserList){}
+    rpc FindAllRestaurantByIsVerified(Status) returns (UserList){}
     rpc FindUserById(FineOneUserDto) returns (UserResponse){}
     rpc UpdateUser(UpdateUserDto) returns (UserResponse){}
     rpc DeleteUser(FineOneUserDto) returns (UserResponse){}
-    rpc VerifyUser(FineOneUserDto) returns (UserResponse){}
+    rpc VerifyUser(VerifyOneUserDto) returns (UserResponse){}
     rpc findUserByEmail(FindUserByEmailDto) returns (UserResponse){}
     rpc DeleteRefreshToken(DeleteRefreshTokenRequest) returns (DeleteRefreshTokenResponse);
     rpc updateRefreshToken(UpdateRefreshTokenRequest) returns (UpdateRefreshTokenResponse);
+}
+
+message Status{
+    string status = 1;
 }
 
 message UpdateRefreshTokenRequest {
@@ -40,10 +51,11 @@ message UserList{
     repeated UserResponse users = 1;
 }
 message FineOneUserDto{
-    string id = 1;
+    string user_id = 1;
 }
 message VerifyOneUserDto{
-    string is_verified =1;
+    string user_id = 1;
+    string is_verified =2;
 }
 message CreateUserDto{
     string user_id = 1;

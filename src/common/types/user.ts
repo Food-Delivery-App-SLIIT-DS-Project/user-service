@@ -10,6 +10,10 @@ import { Observable } from 'rxjs';
 
 export const protobufPackage = 'user';
 
+export interface Status {
+  status: string;
+}
+
 export interface UpdateRefreshTokenRequest {
   userId: string;
   refreshToken: string;
@@ -39,10 +43,11 @@ export interface UserList {
 }
 
 export interface FineOneUserDto {
-  id: string;
+  userId: string;
 }
 
 export interface VerifyOneUserDto {
+  userId: string;
   isVerified: string;
 }
 
@@ -86,13 +91,27 @@ export interface UserServiceClient {
 
   findAllUsers(request: Empty): Observable<UserList>;
 
+  findAllCustomers(request: Empty): Observable<UserList>;
+
+  findAllDeliveryPersonnel(request: Empty): Observable<UserList>;
+
+  findAllRestaurants(request: Empty): Observable<UserList>;
+
+  findAllUserByIsVerified(request: Status): Observable<UserList>;
+
+  findAllCustomerByIsVerified(request: Status): Observable<UserList>;
+
+  findAllDeliveryPersonnelByIsVerified(request: Status): Observable<UserList>;
+
+  findAllRestaurantByIsVerified(request: Status): Observable<UserList>;
+
   findUserById(request: FineOneUserDto): Observable<UserResponse>;
 
   updateUser(request: UpdateUserDto): Observable<UserResponse>;
 
   deleteUser(request: FineOneUserDto): Observable<UserResponse>;
 
-  verifyUser(request: FineOneUserDto): Observable<UserResponse>;
+  verifyUser(request: VerifyOneUserDto): Observable<UserResponse>;
 
   findUserByEmail(request: FindUserByEmailDto): Observable<UserResponse>;
 
@@ -114,6 +133,34 @@ export interface UserServiceController {
     request: Empty,
   ): Promise<UserList> | Observable<UserList> | UserList;
 
+  findAllCustomers(
+    request: Empty,
+  ): Promise<UserList> | Observable<UserList> | UserList;
+
+  findAllDeliveryPersonnel(
+    request: Empty,
+  ): Promise<UserList> | Observable<UserList> | UserList;
+
+  findAllRestaurants(
+    request: Empty,
+  ): Promise<UserList> | Observable<UserList> | UserList;
+
+  findAllUserByIsVerified(
+    request: Status,
+  ): Promise<UserList> | Observable<UserList> | UserList;
+
+  findAllCustomerByIsVerified(
+    request: Status,
+  ): Promise<UserList> | Observable<UserList> | UserList;
+
+  findAllDeliveryPersonnelByIsVerified(
+    request: Status,
+  ): Promise<UserList> | Observable<UserList> | UserList;
+
+  findAllRestaurantByIsVerified(
+    request: Status,
+  ): Promise<UserList> | Observable<UserList> | UserList;
+
   findUserById(
     request: FineOneUserDto,
   ): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
@@ -127,7 +174,7 @@ export interface UserServiceController {
   ): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
 
   verifyUser(
-    request: FineOneUserDto,
+    request: VerifyOneUserDto,
   ): Promise<UserResponse> | Observable<UserResponse> | UserResponse;
 
   findUserByEmail(
@@ -154,6 +201,13 @@ export function UserServiceControllerMethods() {
     const grpcMethods: string[] = [
       'createUser',
       'findAllUsers',
+      'findAllCustomers',
+      'findAllDeliveryPersonnel',
+      'findAllRestaurants',
+      'findAllUserByIsVerified',
+      'findAllCustomerByIsVerified',
+      'findAllDeliveryPersonnelByIsVerified',
+      'findAllRestaurantByIsVerified',
       'findUserById',
       'updateUser',
       'deleteUser',
