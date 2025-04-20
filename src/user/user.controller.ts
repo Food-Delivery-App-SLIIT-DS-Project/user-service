@@ -19,6 +19,7 @@ import {
   DeleteRefreshTokenResponse,
   Status,
   VerifyOneUserDto,
+  FcmTokenResponse,
 } from 'src/common';
 import { from, map, Observable } from 'rxjs';
 import { RpcException } from '@nestjs/microservices';
@@ -29,6 +30,23 @@ import { status } from '@grpc/grpc-js';
 export class UserController implements UserServiceController {
   constructor(private readonly userService: UserService) {}
 
+  //--------------------------------------------
+  findFcmTokenByUserId(request: FineOneUserDto): Observable<FcmTokenResponse> {
+    console.log('findFcmTokenByUserId', request);
+    return from(this.userService.findFcmTokenByUserId(request)).pipe(
+      map((response) => {
+        if (!response) {
+          throw new RpcException({
+            code: status.NOT_FOUND,
+            message: 'FcmToken not found',
+          });
+        }
+        return response;
+      }),
+    );
+  }
+
+  //--------------------------------------------
   createUser(data: CreateUserDto): Observable<UserResponse> {
     console.log('createUser', data);
     return from(this.userService.createUser(data));

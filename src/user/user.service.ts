@@ -6,6 +6,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
 import {
   DeleteRefreshTokenRequest,
+  FcmTokenResponse,
   FineOneUserDto,
   Status,
   UpdateUserDto,
@@ -24,6 +25,22 @@ import * as bcrypt from 'bcryptjs';
 @Injectable()
 export class UserService {
   constructor(private readonly prisma: PrismaService) {}
+
+    // get fcm token by user id -----------------
+  async findFcmTokenByUserId(id: FineOneUserDto): Promise<FcmTokenResponse | null> {
+    const userId = id.userId as unknown as string;
+    const user = await this.prisma.user.findUnique({
+      where: { userId: userId },
+    });
+    if (!user) {
+      return null;
+    }
+    return {
+      fcmToken: user.fcmToken,
+    } as FcmTokenResponse;
+  }
+
+
   // create user -------------------------
   async createUser(data: CreateUserDto): Promise<UserResponse> {
     console.log('createUser--------------------', data);
@@ -38,6 +55,7 @@ export class UserService {
         isVerified: data.isVerified,
         passwordHash: data.passwordHash,
         refreshToken: data.refreshToken,
+        fcmToken: data.fcmToken,
       },
     });
     return {
@@ -49,6 +67,7 @@ export class UserService {
       isVerified: result.isVerified,
       createdAt: result.createdAt.toISOString(),
       updatedAt: result.updatedAt.toISOString(),
+      fcmToken: result.fcmToken,
     } as UserResponse;
   }
 
@@ -136,6 +155,7 @@ export class UserService {
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
         passwordHash: user.passwordHash,
+        fcmToken: user.fcmToken ?? '',
       })),
     };
   }
@@ -156,6 +176,7 @@ export class UserService {
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
         passwordHash: user.passwordHash, // Include this property
+        fcmToken: user.fcmToken ?? '',
       })),
     };
   }
@@ -175,6 +196,7 @@ export class UserService {
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
         passwordHash: user.passwordHash, // Include this property
+        fcmToken: user.fcmToken ?? '',
       })),
     };
   }
@@ -194,6 +216,7 @@ export class UserService {
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
         passwordHash: user.passwordHash, // Include this property
+        fcmToken: user.fcmToken ?? '',
       })),
     };
   }
@@ -202,7 +225,7 @@ export class UserService {
   async findAllUserByIsVerified(status: Status): Promise<UserList> {
     // Check if the status is one of the allowed values
     const users = await this.prisma.user.findMany({
-      where: { isVerified: status.status as unknown as string },
+      where: { isVerified: status.status },
     });
     return {
       users: users.map((user) => ({
@@ -215,6 +238,7 @@ export class UserService {
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
         passwordHash: user.passwordHash,
+        fcmToken: user.fcmToken ?? '',
       })),
     };
   }
@@ -223,7 +247,10 @@ export class UserService {
   async findAllCustomerByIsVerified(isVerified: Status): Promise<UserList> {
     // Check if the status is one of the allowed values
     const users = await this.prisma.user.findMany({
-      where: { role: 'customer', isVerified: isVerified.status as unknown as string },
+      where: {
+        role: 'customer',
+        isVerified: isVerified.status,
+      },
     });
     return {
       users: users.map((user) => ({
@@ -236,6 +263,7 @@ export class UserService {
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
         passwordHash: user.passwordHash,
+        fcmToken: user.fcmToken ?? '',
       })),
     };
   }
@@ -247,7 +275,7 @@ export class UserService {
     const users = await this.prisma.user.findMany({
       where: {
         role: 'delivery_personnel',
-        isVerified: isVerified.status as unknown as string,
+        isVerified: isVerified.status,
       },
     });
     return {
@@ -261,6 +289,7 @@ export class UserService {
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
         passwordHash: user.passwordHash, // Include this property
+        fcmToken: user.fcmToken ?? '',
       })),
     };
   }
@@ -269,7 +298,7 @@ export class UserService {
     const users = await this.prisma.user.findMany({
       where: {
         role: 'restaurant',
-        isVerified: isVerified.status as unknown as string,
+        isVerified: isVerified.status
       },
     });
     return {
@@ -283,6 +312,7 @@ export class UserService {
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
         passwordHash: user.passwordHash, // Include this property
+        fcmToken: user.fcmToken ?? '',
       })),
     };
   }
@@ -348,10 +378,10 @@ export class UserService {
   // FindUserById
   async findUserById(id: FineOneUserDto): Promise<UserResponse | null> {
     console.log('id', id);
-    const  userId = id.userId as unknown as string;
-    console.log('userid', userId)
+    const userId = id.userId as unknown as string;
+    console.log('userid', userId);
     const user = await this.prisma.user.findUnique({
-      where: { userId: userId},
+      where: { userId: userId },
     });
 
     if (!user) {
