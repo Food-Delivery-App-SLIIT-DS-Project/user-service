@@ -115,7 +115,7 @@ export class UserService {
     if (!result) {
       return { refreshToken: '' };
     }
-    return { refreshToken: result.refreshToken };
+    return { refreshToken: result.refreshToken ?? '' };
   }
 
   // find user by email ----------------------------------
