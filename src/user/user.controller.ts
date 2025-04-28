@@ -32,7 +32,13 @@ export class UserController implements UserServiceController {
 
   //--------------------------------------------
   findFcmTokenByUserId(request: FineOneUserDto): Observable<FcmTokenResponse> {
-    console.log('findFcmTokenByUserId', request);
+    console.log('findFcmTokenByUserId-----------', request.userId);
+    if(request.userId === '') {
+      throw new RpcException({
+        code: status.INVALID_ARGUMENT,
+        message: 'userId is required',
+      });
+    }
     return from(this.userService.findFcmTokenByUserId(request)).pipe(
       map((response) => {
         if (!response) {
