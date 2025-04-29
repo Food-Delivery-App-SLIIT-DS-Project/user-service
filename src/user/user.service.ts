@@ -4,7 +4,15 @@
 /* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'prisma/prisma.service';
-import { DeleteRefreshTokenRequest } from 'src/common';
+import {
+  DeleteRefreshTokenRequest,
+  FcmTokenResponse,
+  FineOneUserDto,
+  Status,
+  UpdateUserDto,
+  UserList,
+  VerifyOneUserDto,
+} from 'src/common';
 import {
   CreateUserDto,
   DeleteRefreshTokenResponse,
@@ -17,10 +25,29 @@ import * as bcrypt from 'bcryptjs';
 @Injectable()
 export class UserService {
   constructor(private readonly prisma: PrismaService) {}
+
+    // get fcm token by user id -----------------
+  async findFcmTokenByUserId(id: FineOneUserDto): Promise<FcmTokenResponse | null> {
+    const userId = id.userId as unknown as string;
+    const user = await this.prisma.user.findUnique({
+      where: { userId: userId },
+    });
+    if (!user) {
+      return null;
+    }
+    return {
+      fcmToken: user.fcmToken,
+    } as FcmTokenResponse;
+  }
+
+
   // create user -------------------------
   async createUser(data: CreateUserDto): Promise<UserResponse> {
+    console.log('createUser--------------------', data);
+    // Check if user already exists
     const result = await this.prisma.user.create({
       data: {
+        userId: data.userId,
         fullName: data.fullName,
         email: data.email,
         phoneNumber: data.phoneNumber,
@@ -28,6 +55,7 @@ export class UserService {
         isVerified: data.isVerified,
         passwordHash: data.passwordHash,
         refreshToken: data.refreshToken,
+        fcmToken: data.fcmToken,
       },
     });
     return {
@@ -39,6 +67,7 @@ export class UserService {
       isVerified: result.isVerified,
       createdAt: result.createdAt.toISOString(),
       updatedAt: result.updatedAt.toISOString(),
+      fcmToken: result.fcmToken,
     } as UserResponse;
   }
 
@@ -48,7 +77,9 @@ export class UserService {
     const { userId, refreshToken } = data;
 
     const user = await this.prisma.user.findUnique({ where: { userId } });
+    console.log('user', user);
     if (!user || !user.refreshToken) {
+      console.log('user not found or refresh token not set');
       return { success: false };
     }
 
@@ -56,6 +87,7 @@ export class UserService {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const isMatch = await bcrypt.compare(refreshToken, user.refreshToken);
     if (!isMatch) {
+      console.log('refresh token not match');
       return { success: false };
     }
 
@@ -106,6 +138,265 @@ export class UserService {
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
       passwordHash: user.passwordHash,
+    } as UserResponse;
+  }
+
+  // get all users------------------------------
+  async findAllUsers(): Promise<UserList> {
+    const users = await this.prisma.user.findMany();
+    return {
+      users: users.map((user) => ({
+        userId: user.userId,
+        fullName: user.fullName,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        isVerified: user.isVerified,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+        passwordHash: user.passwordHash,
+        fcmToken: user.fcmToken ?? '',
+      })),
+    };
+  }
+
+  // find all customers
+  async findAllCustomers(): Promise<UserList> {
+    const users = await this.prisma.user.findMany({
+      where: { role: 'customer' },
+    });
+    return {
+      users: users.map((user) => ({
+        userId: user.userId,
+        fullName: user.fullName,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        isVerified: user.isVerified,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+        passwordHash: user.passwordHash, // Include this property
+        fcmToken: user.fcmToken ?? '',
+      })),
+    };
+  }
+  // find all delivery personnel
+  async findAllDeliveryPersonnel(): Promise<UserList> {
+    const users = await this.prisma.user.findMany({
+      where: { role: 'delivery_personnel' },
+    });
+    return {
+      users: users.map((user) => ({
+        userId: user.userId,
+        fullName: user.fullName,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        isVerified: user.isVerified,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+        passwordHash: user.passwordHash, // Include this property
+        fcmToken: user.fcmToken ?? '',
+      })),
+    };
+  }
+  // find all restaurant
+  async findAllRestaurants(): Promise<UserList> {
+    const users = await this.prisma.user.findMany({
+      where: { role: 'restaurant' },
+    });
+    return {
+      users: users.map((user) => ({
+        userId: user.userId,
+        fullName: user.fullName,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        isVerified: user.isVerified,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+        passwordHash: user.passwordHash, // Include this property
+        fcmToken: user.fcmToken ?? '',
+      })),
+    };
+  }
+
+  // FindAllUserByIsVerified
+  async findAllUserByIsVerified(status: Status): Promise<UserList> {
+    // Check if the status is one of the allowed values
+    const users = await this.prisma.user.findMany({
+      where: { isVerified: status.status },
+    });
+    return {
+      users: users.map((user) => ({
+        userId: user.userId,
+        fullName: user.fullName,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        isVerified: user.isVerified,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+        passwordHash: user.passwordHash,
+        fcmToken: user.fcmToken ?? '',
+      })),
+    };
+  }
+
+  // FindAllCustomerByIsVerified
+  async findAllCustomerByIsVerified(isVerified: Status): Promise<UserList> {
+    // Check if the status is one of the allowed values
+    const users = await this.prisma.user.findMany({
+      where: {
+        role: 'customer',
+        isVerified: isVerified.status,
+      },
+    });
+    return {
+      users: users.map((user) => ({
+        userId: user.userId,
+        fullName: user.fullName,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        isVerified: user.isVerified,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+        passwordHash: user.passwordHash,
+        fcmToken: user.fcmToken ?? '',
+      })),
+    };
+  }
+
+  //FindAllDeliveryPersonnelByIsVerified
+  async findAllDeliveryPersonnelByIsVerified(
+    isVerified: Status,
+  ): Promise<UserList> {
+    const users = await this.prisma.user.findMany({
+      where: {
+        role: 'delivery_personnel',
+        isVerified: isVerified.status,
+      },
+    });
+    return {
+      users: users.map((user) => ({
+        userId: user.userId,
+        fullName: user.fullName,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        isVerified: user.isVerified,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+        passwordHash: user.passwordHash, // Include this property
+        fcmToken: user.fcmToken ?? '',
+      })),
+    };
+  }
+  // FindAllRestaurantByIsVerified
+  async findAllRestaurantByIsVerified(isVerified: Status): Promise<UserList> {
+    const users = await this.prisma.user.findMany({
+      where: {
+        role: 'restaurant',
+        isVerified: isVerified.status
+      },
+    });
+    return {
+      users: users.map((user) => ({
+        userId: user.userId,
+        fullName: user.fullName,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        isVerified: user.isVerified,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+        passwordHash: user.passwordHash, // Include this property
+        fcmToken: user.fcmToken ?? '',
+      })),
+    };
+  }
+  // update user by id
+  async updateUser(data: UpdateUserDto): Promise<UserResponse> {
+    const { userId, fullName, phoneNumber, role, isVerified } = data;
+    const result = await this.prisma.user.update({
+      where: { userId },
+      data: {
+        fullName,
+        phoneNumber,
+        role,
+        isVerified,
+      },
+    });
+    return {
+      userId: result.userId,
+      fullName: result.fullName,
+      email: result.email,
+      phoneNumber: result.phoneNumber,
+      role: result.role,
+      isVerified: result.isVerified,
+      createdAt: result.createdAt.toISOString(),
+      updatedAt: result.updatedAt.toISOString(),
+    } as UserResponse;
+  }
+  // delete user by id
+  async deleteUser(id: FineOneUserDto): Promise<UserResponse> {
+    const user = await this.prisma.user.delete({
+      where: { userId: id.userId as unknown as string },
+    });
+    return {
+      userId: user.userId,
+      fullName: user.fullName,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      role: user.role,
+      isVerified: user.isVerified,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
+    } as UserResponse;
+  }
+  // verify user by id
+  async verifyUser(data: VerifyOneUserDto): Promise<UserResponse> {
+    const { userId, isVerified } = data;
+    const id = userId as unknown as string;
+    const user = await this.prisma.user.update({
+      where: { userId: id },
+      data: { isVerified },
+    });
+    return {
+      userId: user.userId,
+      fullName: user.fullName,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      role: user.role,
+      isVerified: user.isVerified,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
+    } as UserResponse;
+  }
+
+  // FindUserById
+  async findUserById(id: FineOneUserDto): Promise<UserResponse | null> {
+    console.log('id', id);
+    const userId = id.userId as unknown as string;
+    console.log('userid', userId);
+    const user = await this.prisma.user.findUnique({
+      where: { userId: userId },
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    return {
+      userId: user.userId,
+      fullName: user.fullName,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      role: user.role,
+      isVerified: user.isVerified,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
     } as UserResponse;
   }
 }

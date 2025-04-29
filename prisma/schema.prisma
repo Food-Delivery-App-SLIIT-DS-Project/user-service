@@ -15,9 +15,10 @@ model User {
   email        String   @unique
   phoneNumber  String
   role         String
-  isVerified   String
+  isVerified   Boolean @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   passwordHash String
   refreshToken String
+  fcmToken    String?
 }
