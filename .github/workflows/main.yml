@@ -90,5 +90,5 @@ jobs:
             cd ~/deploy/user-service
             sudo kubectl apply -f user-service-secret.yaml
             sudo kubectl apply -f user-service-deployment.yaml
-            sudo kubectl apply -f user-service-service.yaml
+            # sudo kubectl apply -f user-service-service.yaml
           EOF
