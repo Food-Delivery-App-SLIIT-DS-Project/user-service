@@ -30,6 +30,9 @@ jobs:
         run: |
           docker build -t $IMAGE_NAME:$IMAGE_TAG .
           docker push $IMAGE_NAME:$IMAGE_TAG
+          
+      - name: Write user-service-secret.yaml from GitHub Secret
+        run: echo "${{ secrets.USER_SERVICE_SECRET_YAML }}" > user-service-secret.yaml
 
       - name: Copy manifests to EC2
         uses: appleboy/scp-action@v0.1.7
