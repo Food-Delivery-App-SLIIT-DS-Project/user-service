@@ -19,26 +19,60 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Create user-service-deployment.yaml
+        shell: bash
+        run: |
+          cat << 'EOL' > user-service-deployment.yaml
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: user-service
+            namespace: default
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: user-service
+            template:
+              metadata:
+                labels:
+                  app: user-service
+              spec:
+                containers:
+                - name: user-service
+                  image: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+                  ports:
+                  - containerPort: 8080
+                  envFrom:
+                  - secretRef:
+                      name: user-service-secret
+          EOL
+          
+      - name: Check if files exist
+        run: |
+          ls -la
+          echo "Checking if deployment and secret files exist:"
+          [ -f user-service-deployment.yaml ] && echo "user-service-deployment.yaml exists" || echo "user-service-deployment.yaml MISSING"
+          [ -f user-service-secret.yaml ] && echo "user-service-secret.yaml exists" || echo "user-service-secret.yaml MISSING"
+          [ -f user-service-service.yaml ] && echo "user-service-service.yaml exists" || echo "user-service-service.yaml MISSING"
+      - name: Write user-service-secret.yaml from GitHub Secret
+        shell: bash
+        run: |
+          echo '${{ secrets.USER_SERVICE_SECRET_YAML }}' > user-service-secret.yaml
+          
       - name: Build and push Docker image
         run: |
           docker build -t $IMAGE_NAME:$IMAGE_TAG .
           docker push $IMAGE_NAME:$IMAGE_TAG
-      - name: Write user-service-secret.yaml from GitHub Secret
-        shell: bash
-        run: |
-          cat << 'EOL' > user-service-secret.yaml
-          ${{ secrets.USER_SERVICE_SECRET_YAML }}
-          EOL
       - name: Copy manifests to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: |
-            user-service-deployment.yaml
-            user-service-secret.yaml
-          target: /home/ubuntu/deploy/user-service
+          source: "user-service-*.yaml"
+          target: "/home/ubuntu/deploy/user-service"
+          strip_components: 0
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -49,3 +83,4 @@ jobs:
             cd /home/ubuntu/deploy/user-service
             kubectl apply -f user-service-secret.yaml
             kubectl apply -f user-service-deployment.yaml
+            kubectl apply -f user-service-service.yaml
