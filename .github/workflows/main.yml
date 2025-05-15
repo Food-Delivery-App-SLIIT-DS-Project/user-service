@@ -64,19 +64,32 @@ jobs:
         run: |
           docker build -t $IMAGE_NAME:$IMAGE_TAG .
           docker push $IMAGE_NAME:$IMAGE_TAG
-      - name: Set up SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+      - name: Set up alternative SSH authentication
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
           
-      - name: Copy manifests to EC2
+      - name: Debug SSH connection
         run: |
-          scp user-service-*.yaml ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/deploy/user-service/
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          # Add -v for verbose output to diagnose connection issues
+          ssh -v -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} 'echo "SSH Connection successful"' || echo "SSH connection failed"
+          
+      - name: Use proven action for deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key_path: ~/.ssh/id_rsa
+          debug: true
+          script: |
+            mkdir -p /home/ubuntu/deploy/user-service
+            echo "Directory created or already exists"
       - name: Deploy on EC2
         run: |
-          ssh ubuntu@${{ secrets.EC2_HOST }} 'cd /home/ubuntu/deploy/user-service && \
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} 'mkdir -p /home/ubuntu/deploy/user-service'
+          scp -o StrictHostKeyChecking=no user-service-*.yaml ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/deploy/user-service/
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} 'cd /home/ubuntu/deploy/user-service && \
           kubectl apply -f user-service-secret.yaml && \
           kubectl apply -f user-service-deployment.yaml && \
           kubectl apply -f user-service-service.yaml'
