@@ -1,43 +1,34 @@
 name: Deploy User Service to K3s
-
 on:
   push:
     branches:
       - main
-
 env:
   IMAGE_NAME: mash02/user-service
   IMAGE_TAG: latest
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
-
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-
       - name: Build and push Docker image
         run: |
           docker build -t $IMAGE_NAME:$IMAGE_TAG .
           docker push $IMAGE_NAME:$IMAGE_TAG
-
       - name: Write user-service-secret.yaml from GitHub Secret
         shell: bash
         run: |
-          cat <<EOF > user-service-secret.yaml
-${{ secrets.USER_SERVICE_SECRET_YAML }}
-EOF
-
+          cat << 'EOL' > user-service-secret.yaml
+          ${{ secrets.USER_SERVICE_SECRET_YAML }}
+          EOL
       - name: Copy manifests to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -48,7 +39,6 @@ EOF
             user-service-deployment.yaml
             user-service-secret.yaml
           target: /home/ubuntu/deploy/user-service
-
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
