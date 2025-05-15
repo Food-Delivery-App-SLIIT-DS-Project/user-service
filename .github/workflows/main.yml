@@ -35,8 +35,9 @@ jobs:
         shell: bash
         run: |
           cat <<EOF > user-service-secret.yaml
-          ${{ secrets.USER_SERVICE_SECRET_YAML }}
-          EOF   
+${{ secrets.USER_SERVICE_SECRET_YAML }}
+EOF
+
       - name: Copy manifests to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
