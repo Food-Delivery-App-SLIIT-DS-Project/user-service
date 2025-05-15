@@ -37,3 +37,4 @@ RUN npm cache clean --force
 
 EXPOSE 50052
 CMD ["npm", "run", "start:prod"]
+#change file name to Dockerfile
