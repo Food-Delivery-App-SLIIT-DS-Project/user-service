@@ -3,10 +3,10 @@ name: Deploy User Service to K3s
 on:
   push:
     branches:
-      - main  # or any branch you want
+      - main # or any branch you want
 
 env:
-  IMAGE_NAME: your-dockerhub-username/user-service
+  IMAGE_NAME: mash02/user-service
   IMAGE_TAG: latest
 
 jobs:
