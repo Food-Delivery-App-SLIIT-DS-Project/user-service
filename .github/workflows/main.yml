@@ -28,7 +28,7 @@ jobs:
       - name: Create user-service-deployment.yaml
         shell: bash
         run: |
-          cat << 'EOL' > user-service-deployment.yaml
+          cat <<EOF > user-service-deployment.yaml
           apiVersion: apps/v1
           kind: Deployment
           metadata:
@@ -46,45 +46,23 @@ jobs:
               spec:
                 containers:
                 - name: user-service
-                  image: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+                  image: ${IMAGE_NAME}:${IMAGE_TAG}
                   ports:
                   - containerPort: 8080
                   envFrom:
                   - secretRef:
                       name: user-service-secret
-          EOL
-
-      - name: Create user-service-service.yaml
-        shell: bash
-        run: |
-          cat << 'EOL' > user-service-service.yaml
-          apiVersion: v1
-          kind: Service
-          metadata:
-            name: user-service
-            namespace: default
-          spec:
-            selector:
-              app: user-service
-            ports:
-              - protocol: TCP
-                port: 80
-                targetPort: 8080
-            type: ClusterIP
-          EOL
+          EOF
 
       - name: Write user-service-secret.yaml from GitHub Secret
-        shell: bash
-        run: |
-          printf "%s" "${{ secrets.USER_SERVICE_SECRET_YAML }}" > user-service-secret.yaml
+        run: echo '${{ secrets.USER_SERVICE_SECRET_YAML }}' > user-service-secret.yaml
 
       - name: Check if files exist
         run: |
           ls -la
-          echo "Checking if deployment and secret files exist:"
-          [ -f user-service-deployment.yaml ] && echo "user-service-deployment.yaml exists" || echo "user-service-deployment.yaml MISSING"
-          [ -f user-service-secret.yaml ] && echo "user-service-secret.yaml exists" || echo "user-service-secret.yaml MISSING"
-          [ -f user-service-service.yaml ] && echo "user-service-service.yaml exists" || echo "user-service-service.yaml MISSING"
+          echo "user-service-deployment.yaml:" && cat user-service-deployment.yaml
+          echo "user-service-secret.yaml:" && cat user-service-secret.yaml || echo "Missing secret file"
+          echo "user-service-service.yaml:" && cat user-service-service.yaml || echo "Missing service file"
 
       - name: Build and push Docker image
         run: |
@@ -92,35 +70,25 @@ jobs:
           docker push $IMAGE_NAME:$IMAGE_TAG
 
       - name: Install OpenSSH client
-        run: |
-          sudo apt-get update && sudo apt-get install -y openssh-client
+        run: sudo apt-get update && sudo apt-get install -y openssh-client
 
-      - name: Setup SSH key with proper format
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+      - name: Set up SSH key (RSA)
         run: |
           mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          printf "%s" "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
       - name: Test SSH connection
-        run: |
-          echo "Testing SSH connection..."
-          ssh -o "StrictHostKeyChecking=no" ubuntu@${{ secrets.EC2_HOST }} 'echo "SSH connection successful"'
+        run: ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} 'echo "SSH connection successful"'
 
-      - name: Deploy to EC2 with SSH
+      - name: Deploy to EC2
         run: |
-          ssh -o "StrictHostKeyChecking=no" ubuntu@${{ secrets.EC2_HOST }} 'mkdir -p /home/ubuntu/deploy/user-service'
-          echo "Copying YAML files to EC2..."
-          scp -o "StrictHostKeyChecking=no" user-service-*.yaml ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/deploy/user-service/
-          echo "Applying Kubernetes configurations..."
-          ssh -o "StrictHostKeyChecking=no" ubuntu@${{ secrets.EC2_HOST }} '
-            cd /home/ubuntu/deploy/user-service && 
-            kubectl apply -f user-service-secret.yaml && 
-            kubectl apply -f user-service-deployment.yaml && 
-            kubectl apply -f user-service-service.yaml && 
-            kubectl rollout status deployment/user-service
-          '
+          ssh ubuntu@${{ secrets.EC2_HOST }} "mkdir -p ~/deploy/user-service"
+          scp user-service-*.yaml ubuntu@${{ secrets.EC2_HOST }}:~/deploy/user-service/
+          ssh ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            cd ~/deploy/user-service
+            kubectl apply -f user-service-secret.yaml
+            kubectl apply -f user-service-deployment.yaml
+            kubectl apply -f user-service-service.yaml
+          EOF
