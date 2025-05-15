@@ -88,7 +88,7 @@ jobs:
           scp user-service-*.yaml ubuntu@${{ secrets.EC2_HOST }}:~/deploy/user-service/
           ssh ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
             cd ~/deploy/user-service
-            kubectl apply -f user-service-secret.yaml
-            kubectl apply -f user-service-deployment.yaml
-            kubectl apply -f user-service-service.yaml
+            sudo kubectl apply -f user-service-secret.yaml
+            sudo kubectl apply -f user-service-deployment.yaml
+            sudo kubectl apply -f user-service-service.yaml
           EOF
