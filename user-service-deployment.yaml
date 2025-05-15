@@ -21,7 +21,7 @@ spec:
             - containerPort: 50052
           envFrom:
             - secretRef:
-                name: user-service-env
+                name: user-service-secret
 ---
 apiVersion: v1
 kind: Service
