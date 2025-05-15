@@ -64,32 +64,52 @@ jobs:
         run: |
           docker build -t $IMAGE_NAME:$IMAGE_TAG .
           docker push $IMAGE_NAME:$IMAGE_TAG
-      - name: Set up alternative SSH authentication
-        uses: webfactory/ssh-agent@v0.8.0
-        with:
-          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
-          
-      - name: Debug SSH connection
+      - name: Install OpenSSH client
         run: |
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-          # Add -v for verbose output to diagnose connection issues
-          ssh -v -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} 'echo "SSH Connection successful"' || echo "SSH connection failed"
-          
-      - name: Use proven action for deployment
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key_path: ~/.ssh/id_rsa
-          debug: true
-          script: |
-            mkdir -p /home/ubuntu/deploy/user-service
-            echo "Directory created or already exists"
-      - name: Deploy on EC2
+          apt-get update && apt-get install -y openssh-client
+
+      - name: Setup SSH key with proper format
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} 'mkdir -p /home/ubuntu/deploy/user-service'
-          scp -o StrictHostKeyChecking=no user-service-*.yaml ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/deploy/user-service/
-          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_HOST }} 'cd /home/ubuntu/deploy/user-service && \
-          kubectl apply -f user-service-secret.yaml && \
-          kubectl apply -f user-service-deployment.yaml && \
-          kubectl apply -f user-service-service.yaml'
+          mkdir -p ~/.ssh
+          echo "Setting up SSH key..."
+          # Create a fresh key file
+          > ~/.ssh/id_rsa
+          # Set permissions before writing content
+          chmod 600 ~/.ssh/id_rsa
+          # Write the key with proper line handling
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          
+          # Check key format and add debugging info
+          echo "Key file stats:"
+          ls -la ~/.ssh/id_rsa
+          echo "First line of key (should be -----BEGIN...):"
+          head -n 1 ~/.ssh/id_rsa | grep -v "BEGIN" && echo "ERROR: Missing BEGIN header" || echo "BEGIN header found"
+          echo "Last line of key (should be -----END...):"
+          tail -n 1 ~/.ssh/id_rsa | grep -v "END" && echo "ERROR: Missing END header" || echo "END header found"
+          
+          # Add host key to known hosts
+          ssh-keyscan ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+          
+      - name: Test SSH connection
+        run: |
+          echo "Testing SSH connection with verbose output..."
+          ssh -v -o "StrictHostKeyChecking=no" ubuntu@${{ secrets.EC2_HOST }} 'echo "SSH connection successful"'
+      - name: Deploy to EC2 with SSH
+        run: |
+          # Ensure target directory exists
+          ssh -o "StrictHostKeyChecking=no" ubuntu@${{ secrets.EC2_HOST }} 'mkdir -p /home/ubuntu/deploy/user-service'
+          
+          # Copy files
+          echo "Copying YAML files to EC2..."
+          scp -o "StrictHostKeyChecking=no" user-service-*.yaml ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/deploy/user-service/
+          
+          # Apply Kubernetes configurations
+          echo "Applying Kubernetes configurations..."
+          ssh -o "StrictHostKeyChecking=no" ubuntu@${{ secrets.EC2_HOST }} '
+            cd /home/ubuntu/deploy/user-service && 
+            kubectl apply -f user-service-secret.yaml && 
+            kubectl apply -f user-service-deployment.yaml && 
+            kubectl apply -f user-service-service.yaml
+          '
