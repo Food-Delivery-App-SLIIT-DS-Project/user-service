@@ -31,7 +31,7 @@ COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/clie
 # App code and config
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/.env ./.env
+# COPY --from=builder /app/.env ./.env
 
 RUN npm cache clean --force
 
